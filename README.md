@@ -1,6 +1,7 @@
 # ECE585_TomasuloAlgorithm
 ##C++ Tomasulo Algorithm Datapath/Simulator
-**Author:   Arthur J. Miller**
+**Author:   Jared Lev A. Carranza**
+**Original simulator was created by Arthur J. Miller**
 
 ___
 
