@@ -21,16 +21,18 @@ ___
  a. Define the constants for the # of Reservation Stations
      
      // NUMBER OF RESERVATION STATIONS
-     const int Num_ADD_RS = 4;
-     const int Num_MULT_RS = 2;
-     const int Num_DIV_RS = 3;
+     const int Num_LOAD_RS = 3;
+     const int Num_ADD_RS = 3;
+     const int Num_MULT_RS = 3;
+     const int Num_DIV_RS = 2;
  
  b. Define latency's
     
     // RESERVATION STATION LATENCY
-    const int ADD_Lat = 4;
-    const int MULT_Lat = 12;
-    const int DIV_Lat = 38;
+    const int LOAD_Lat = 2;
+    const int ADD_Lat = 2;
+    const int MULT_Lat = 5;
+    const int DIV_Lat = 10;
     // Datapath Latency
     const int ISSUE_Lat = 1;
     const int WRITEBACK_Lat = 1;
@@ -50,6 +52,10 @@ ___
              DIV1(DivOp, OperandInit),
              DIV2(DivOp, OperandInit),
              DIV3(DivOp, OperandInit);
+     ReservationStation
+             LOAD1(LoadOp, OperandInit),
+             LOAD2(LoadOp, OperandInit),
+             LOAD3(LoadOp, OperandInit);
      
 ** Note: Currently only 12 registers are being used. To add more registers to the architecture
 you must edit both the `RegisterStatus` objects and `Register` objects  **
@@ -77,13 +83,15 @@ you must edit both the `RegisterStatus` objects and `Register` objects  **
     // Input program instructions
       Instruction
               //(rd,rs,rt,opcode)
-              I0(1,2,3,AddOp),
-              I1(4,1,5,AddOp),
-              I2(6,7,8,SubOp),
-              I3(9,4,10,MultOp),
-              I4(11,12,6,DivOp),
-              I5(8,1,5,MultOp),
-              I6(7,2,3,MultOp);
+              I0(2,8,1,LoadOp),
+              I1(6,9,2,LoadOp),
+              I2(1,2,3,AddOp),
+              I3(4,1,5,AddOp),
+              I4(6,7,8,SubOp),
+              I5(9,4,10,MultOp),
+              I6(11,12,6,DivOp),
+              I7(8,1,5,MultOp),
+              I8(7,2,3,MultOp);
  
 **3. COMPILE AND RUN PROGRAM**
 
@@ -101,15 +109,17 @@ you must edit both the `RegisterStatus` objects and `Register` objects  **
  b. Displays the timing diagram of the ISSUE EXECUTE WRITEBACK for each instruction at each clock cycle
  
      Inst      Issue     Execute   WB        SystemClock
-                                                      47
-      
-     0         1         2-5         6         
-     1         2         7-10        11        
-     2         3         4-7         8         
-     3         4         12-23        24        
-     4         5         9-46        47        
-     5         6         7-18        19        
-     6         20        21-32        33        
+                                                13
+
+     0         1       s  2-3         4         
+     1         2         5-6         7         
+     2         3         5-6         7         
+     3         4         8-9         10        
+     4         5         6-7         8         
+     5         6         11-12        13        
+     6         7         9-10        11        
+     7         8         9-10        11        
+     8         9         10-11        12        
  
 ___
 
@@ -118,25 +128,29 @@ ___
  
 Instructions for provided example test program:
  
-    I0: ADD     F1,F2,F3        
-    I1: ADD     F4,F1,F5        // Data Dependency on I0
-    I2: SUB     F6,F7,F8        
-    I3: MULT    F9,F4,F10       // Data Dependency on I1
-    I4: DIV     F11,F12,F6      // Data Dependency on I2
-    I5: MULT    F8,F1,F5        // Data Dependency on I0
-    I6: MULT    F7,F2,F3
+    I0: LOAD    F2, F8, F1
+    I1: LOAD    F6, F9, F2
+    I2: ADD     F1,F2,F3        //Data dependency on I0
+    I3: ADD     F4,F1,F5        // Data Dependency on I2
+    I4: SUB     F6,F7,F8        
+    I5: MULT    F9,F4,F10       // Data Dependency on I3
+    I6: DIV     F11,F12,F6      // Data Dependency on I4
+    I7: MULT    F8,F1,F5        // Data Dependency on I2
+    I8: MULT    F7,F2,F3        //Data dependency on I0
  
 Code for defining given example test program
 
     Instruction
                 //(rd,rs,rt,opcode)
-                I0(1,2,3,AddOp),
-                I1(4,1,5,AddOp),
-                I2(6,7,8,SubOp),
-                I3(9,4,10,MultOp),
-                I4(11,12,6,DivOp),
-                I5(8,1,5,MultOp),
-                I6(7,2,3,MultOp);
+                I0(2,8,1,LoadOp),
+                I1(6,9,2,LoadOp),
+                I2(1,2,3,AddOp),
+                I3(4,1,5,AddOp),
+                I4(6,7,8,SubOp),
+                I5(9,4,10,MultOp),
+                I6(11,12,6,DivOp),
+                I7(8,1,5,MultOp),
+                I8(7,2,3,MultOp);
                 
 Initial Register File Values
     
@@ -162,18 +176,19 @@ Code for defining given initial register file values
 Expected Output w/ given reservation station architecture (This was checked by hand)
 
     Register Content:
-    5000 5 2 3 10 5 -1 6 25 100 10 -12 12
-    
+    5000 10 7 3 15 5 -1 4 5 5 10 13 12 
     Inst      Issue     Execute   WB        SystemClock
-                                                      47
-      
-     0         1         2-5         6         
-     1         2         7-10        11        
-     2         3         4-7         8         
-     3         4         12-23        24        
-     4         5         9-46        47        
-     5         6         7-18        19        
-     6         20        21-32        33    
+                                                13
+
+    0         1         2-3         4         
+    1         2         5-6         7         
+    2         3         5-6         7         
+    3         4         8-9         10        
+    4         5         6-7         8         
+    5         6         11-12        13        
+    6         7         9-10        11        
+    7         8         9-10        11        
+    8         9         10-11        12    
 
 **NOTE: By changing the number of reservation stations you can see the timing change.
 This program has been tested with several different reservation station architectures**
